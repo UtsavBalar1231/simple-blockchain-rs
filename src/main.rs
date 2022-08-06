@@ -1,11 +1,10 @@
-use ed25519_dalek::{Keypair, PublicKey};
+use ed25519_dalek::Keypair;
 use simple_blockchain_rs::client::Client;
-use simple_blockchain_rs::transaction::{Transaction};
-
+use simple_blockchain_rs::transaction::Transaction;
 
 fn main() {
     let client = Client::new();
-    println!("client: {:?}", client.identify());
+    //println!("client public key: {:?}", client.identify());
 
     let receiver = Client::new();
     let amount = 1.0;
@@ -16,5 +15,6 @@ fn main() {
         public: client.public_key,
     });
 
-    println!("transaction1: {:#?}", transaction1);
+    //transaction1.print_transaction();
+    //transaction1.print_signature();
 }
