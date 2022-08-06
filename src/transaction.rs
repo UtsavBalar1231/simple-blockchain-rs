@@ -1,5 +1,5 @@
 use chrono::{DateTime, Utc};
-use ed25519_dalek::{Keypair, PublicKey, Signature, Signer};
+use ed25519_dalek::{Keypair, PublicKey, Signature, Signer, Verifier};
 
 /// A transaction structure that can be used to record a transaction in the blockchain.
 ///
@@ -8,12 +8,27 @@ use ed25519_dalek::{Keypair, PublicKey, Signature, Signer};
 /// `amount` contains the amount of money that is being sent.
 /// `signature` contains the signature of the transaction.
 /// `timestamp` contains the time at which the transaction was created.
+#[derive(Debug, Clone)]
 pub struct Transaction {
     pub sender: PublicKey,
     pub receiver: PublicKey,
     time: DateTime<Utc>,
     pub amount: f64,
     signature: Option<Signature>,
+}
+
+impl std::fmt::Display for Transaction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Transaction {{ sender: {:?}, receiver: {:?}, amount: {:?}, signature: {:?}, time: {:?} }}",
+            self.sender.as_bytes(),
+            self.receiver.as_bytes(),
+            self.amount,
+            self.signature.as_ref().map(|s| s.to_bytes()),
+            self.time
+        )
+    }
 }
 
 impl Transaction {
@@ -36,8 +51,7 @@ impl Transaction {
         }
     }
 
-    /// This method calculates the hash of the transaction using SHA256.
-    pub fn calculate_hash(&self) -> Vec<u8> {
+    pub fn bytes(&self) -> Vec<u8> {
         let mut data = vec![];
         data.extend(self.sender.as_bytes());
         data.extend(self.receiver.as_bytes());
@@ -46,8 +60,12 @@ impl Transaction {
             data.extend(signature.to_bytes());
         }
         data.extend(&self.amount.to_bits().to_ne_bytes());
+        data
+    }
 
-        crypto_hash::digest(crypto_hash::Algorithm::SHA256, data.as_slice())
+    /// This method calculates the hash of the transaction using SHA256.
+    pub fn calculate_hash(&self) -> Vec<u8> {
+        crypto_hash::digest(crypto_hash::Algorithm::SHA256, &self.bytes())
     }
 
     /// This method signs the transaction using the private key of the client.
@@ -71,5 +89,12 @@ impl Transaction {
     /// This method prints the signature of the transaction.
     pub fn print_signature(&self) {
         println!("{:?}", self.signature.expect("No signature found."));
+    }
+
+    pub fn is_valid_transaction(&self) -> bool {
+        match (self.sender, self.signature) {
+            (p, Some(s)) if p.verify(&self.calculate_hash(), &s).is_ok() => true,
+            _ => false,
+        }
     }
 }
