@@ -1,0 +1,16 @@
+[package]
+name = "simple-blockchain-rs"
+version = "0.1.0"
+edition = "2021"
+authors = ["Utsav Balar"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rand = "0.7.0"
+crypto-hash = "0.3.4"
+ed25519-dalek = "1.0.1"
+base64 = "0.13.0"
+chrono = "0.4.0"
+bincode = "1.0.2"
+ring = "0.13.0"
