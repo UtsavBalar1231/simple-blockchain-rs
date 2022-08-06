@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use ed25519_dalek::{Keypair, PublicKey, Signature, Signer};
 
 /// A transaction structure that can be used to record a transaction in the blockchain.
-/// 
+///
 /// `sender` contains the public key of the client that is sending the transaction.
 /// `receiver` contains the public key of the client that is receiving the transaction.
 /// `amount` contains the amount of money that is being sent.
@@ -18,8 +18,8 @@ pub struct Transaction {
 
 impl Transaction {
     pub fn new(
-        sender: &[u8; 32],
-        receiver: &[u8; 32],
+        sender: PublicKey,
+        receiver: PublicKey,
         amount: f64,
         signature: Option<Signature>,
     ) -> Self {
@@ -28,8 +28,8 @@ impl Transaction {
         }
 
         Self {
-            sender: PublicKey::from_bytes(sender).unwrap(),
-            receiver: PublicKey::from_bytes(receiver).unwrap(),
+            sender,
+            receiver,
             time: Utc::now(),
             signature,
             amount,

@@ -16,10 +16,9 @@ impl Client {
     pub fn new() -> Self {
         let mut csprng = OsRng {};
         let key_pair = Keypair::generate(&mut csprng);
-        let public_key = key_pair.public;
         Self {
             secret: key_pair.secret,
-            public_key,
+            public_key: key_pair.public,
         }
     }
 
