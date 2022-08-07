@@ -1,29 +1,59 @@
-use ed25519_dalek::{Keypair, PublicKey, SecretKey};
-use rand::rngs::OsRng;
+use secp256k1::ecdsa::Signature;
+use secp256k1::rand;
+use secp256k1::All;
+use secp256k1::Secp256k1;
+use std::str::FromStr;
+
+pub mod key {
+    pub use secp256k1::PublicKey;
+    pub use secp256k1::SecretKey;
+}
 
 /// A client structure that can be used to interact with a blockchain.
 ///
-/// `key_pair` contains the private key and public key of the client.
-/// The public key is used to identify the client to the blockchain.
-/// The private key is used to sign messages.
+/// `public_key` contains the public key of the client.
+/// `secret_key` contains the private key of the client.
+/// `secp` contains the secp256k1 context.
 pub struct Client {
-    pub secret: SecretKey,
-    pub public_key: PublicKey,
+    pub secp: Secp256k1<All>,
+    pub secret_key: key::SecretKey,
+    pub public_key: key::PublicKey,
 }
 
 impl Client {
-    /// Creates a new client with a random key pair.
+    /// This method creates a new client with a random key pair.
+    #[allow(deprecated)]
     pub fn new() -> Self {
-        let mut csprng = OsRng {};
-        let key_pair = Keypair::generate(&mut csprng);
+        let mut rand = rand::rngs::OsRng {};
+        let secp = Secp256k1::new();
+        let (secret_key, public_key) = secp.generate_keypair(&mut rand);
         Self {
-            secret: key_pair.secret,
-            public_key: key_pair.public,
+            secp,
+            secret_key,
+            public_key,
         }
     }
 
+    /// This method creates a new client from a given secret key.
+    pub fn from(key: String) -> Result<Client, secp256k1::Error> {
+        let secp = Secp256k1::new();
+        let secret_key = key::SecretKey::from_str(&key)?;
+        let public_key = key::PublicKey::from_secret_key(&secp, &secret_key);
+        return Ok(Client {
+            secp,
+            public_key,
+            secret_key,
+        });
+    }
+
     /// This method identifies the client to the blockchain.
-    pub fn identify(&self) -> &[u8; 32] {
-        self.public_key.as_bytes()
+    pub fn identify(&self) -> String {
+        self.public_key.to_string()
+    }
+
+    /// This method signs a transaction with the client's private key.
+    pub fn sign(&self, transaction: &[u8]) -> Signature {
+        let message = secp256k1::Message::from_slice(transaction).unwrap();
+        self.secp.sign_ecdsa(&message, &self.secret_key)
     }
 }

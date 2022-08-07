@@ -1,5 +1,8 @@
+use crate::client::Client;
 use chrono::{DateTime, Utc};
-use ed25519_dalek::{Keypair, PublicKey, Signature, Signer, Verifier};
+use secp256k1::{Message, PublicKey, Secp256k1};
+use secp256k1::ecdsa::Signature;
+use std::str::FromStr;
 
 /// A transaction structure that can be used to record a transaction in the blockchain.
 ///
@@ -8,35 +11,22 @@ use ed25519_dalek::{Keypair, PublicKey, Signature, Signer, Verifier};
 /// `amount` contains the amount of money that is being sent.
 /// `signature` contains the signature of the transaction.
 /// `timestamp` contains the time at which the transaction was created.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Transaction {
     pub sender: PublicKey,
     pub receiver: PublicKey,
     time: DateTime<Utc>,
     pub amount: f64,
-    signature: Option<Signature>,
-}
-
-impl std::fmt::Display for Transaction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Transaction {{ sender: {:?}, receiver: {:?}, amount: {:?}, signature: {:?}, time: {:?} }}",
-            self.sender.as_bytes(),
-            self.receiver.as_bytes(),
-            self.amount,
-            self.signature.as_ref().map(|s| s.to_bytes()),
-            self.time
-        )
-    }
+    signature: Option<String>,
 }
 
 impl Transaction {
+    /// This method creates a new transaction.
     pub fn new(
         sender: PublicKey,
         receiver: PublicKey,
         amount: f64,
-        signature: Option<Signature>,
+        signature: Option<String>,
     ) -> Self {
         if sender == receiver {
             panic!("Sender and receiver cannot be the same.");
@@ -51,50 +41,56 @@ impl Transaction {
         }
     }
 
-    pub fn bytes(&self) -> Vec<u8> {
-        let mut data = vec![];
-        data.extend(self.sender.as_bytes());
-        data.extend(self.receiver.as_bytes());
-        data.extend(self.time.to_rfc3339().as_bytes());
-        if let Some(signature) = &self.signature {
-            data.extend(signature.to_bytes());
-        }
-        data.extend(&self.amount.to_bits().to_ne_bytes());
-        data
+    /// This method serializes the transaction into a string.
+    pub fn serialize(&self) -> String {
+        format!(
+            "{}{}{}{}",
+            self.sender, self.receiver, self.amount, self.time,
+        )
     }
 
     /// This method calculates the hash of the transaction using SHA256.
     pub fn calculate_hash(&self) -> Vec<u8> {
-        crypto_hash::digest(crypto_hash::Algorithm::SHA256, &self.bytes())
+        crypto_hash::digest(crypto_hash::Algorithm::SHA256, &self.serialize().as_bytes())
     }
 
-    /// This method signs the transaction using the private key of the client.
-    pub fn sign_transaction(&mut self, key: Keypair) {
-        if self.sender != key.public {
-            panic!("You can not sign other's transaction!!!")
-        } else {
-            self.signature = Some(key.sign(&self.calculate_hash()));
-        }
+    /// This method signs the transaction using the private key of the signer.
+    pub fn sign_transaction(&mut self, signer: &Client) {
+        self.signature = Some(signer.sign(&self.calculate_hash()).to_string());
     }
 
     /// This method prints the signature of the transaction.
     pub fn print_transaction(&self) {
-        println!("sender: {:?}", self.sender.as_bytes());
-        println!("receiver: {:?}", self.receiver.as_bytes());
+        println!("sender: {}", self.sender.to_string());
+        println!("receiver: {}", self.receiver.to_string());
         println!("time: {:?}", self.time);
         println!("amount: {:?}", self.amount);
-        println!("signature: {:#?}", self.signature);
+        if let Some(signature) = &self.signature {
+            println!("signature: {}", signature);
+        }
+        println!("");
     }
 
     /// This method prints the signature of the transaction.
     pub fn print_signature(&self) {
-        println!("{:?}", self.signature.expect("No signature found."));
+        println!(
+            "Signature: {}",
+            self.signature.as_ref().expect("No signature found.")
+        );
     }
 
+    /// This method verifies the signature of the transaction.
     pub fn is_valid_transaction(&self) -> bool {
-        match (self.sender, self.signature) {
-            (p, Some(s)) if p.verify(&self.calculate_hash(), &s).is_ok() => true,
-            _ => false,
+        let secp = Secp256k1::verification_only();
+        let unsigned_tx_hash =
+            Message::from_slice(self.calculate_hash().as_slice()).expect("message from slice");
+        if let Some(_) = &self.signature {
+            let sig =
+                Signature::from_str(self.signature.as_ref().unwrap_or(&String::new()).as_str())
+                    .expect("signature from string");
+            return secp.verify_ecdsa(&unsigned_tx_hash, &sig, &self.sender).is_ok();
+        } else {
+            return false;
         }
     }
 }

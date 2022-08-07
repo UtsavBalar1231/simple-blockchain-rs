@@ -1,4 +1,6 @@
-use ed25519_dalek::Keypair;
+use std::str::FromStr;
+
+use secp256k1::{PublicKey, Secp256k1, SecretKey};
 use simple_blockchain_rs::block::Block;
 use simple_blockchain_rs::blockchain::Blockchain;
 use simple_blockchain_rs::client::Client;
@@ -6,18 +8,15 @@ use simple_blockchain_rs::transaction::Transaction;
 
 fn main() {
     // let client = Client::new();
-    //println!("client public key: {:?}", client.public_key);
+    // println!("client public key: {}", client.identify());
 
     // let receiver = Client::new();
     // let amount = 1.0;
 
     // let mut transaction1 = Transaction::new(client.public_key, receiver.public_key, amount, None);
-    // transaction1.sign_transaction(Keypair {
-    //     secret: client.secret,
-    //     public: client.public_key,
-    // });
+    // transaction1.sign_transaction(&client);
 
-    //transaction1.print_transaction();
+    // println!("{:#?}", transaction1);
     //transaction1.print_signature();
 
     //let mut transactions = vec![];
@@ -26,50 +25,46 @@ fn main() {
     let bhupendra = Client::new();
     let jash = Client::new();
 
-    let genesis = Keypair::from_bytes(
-        "0000f816a87f806bb0073dcf026a64fb40c946b5abee2573702828694d5b4c43".as_bytes(),
-    )
-    .unwrap()
-    .public;
+    let genesis_hash =
+        "0000000000000000000000000000000000000000000000000000000000000001".to_string();
+    let genesis_secp = Secp256k1::new();
+    let genesis_secretkey = SecretKey::from_str(genesis_hash.as_str()).unwrap();
+    let genesis_publickey = PublicKey::from_secret_key(&genesis_secp, &genesis_secretkey);
+    let transaction0 = Transaction::new(genesis_publickey, utsav.public_key, 1000.0, None);
 
-    let transaction1 = Transaction::new(genesis, utsav.public_key, 1000.0, None);
+    let mut block0 = Block::new(0, genesis_hash);
+    block0.verified_transactions.push(transaction0);
 
-    let mut block0 = Block::new(0);
-    block0.pre_hash = None;
-    block0.nonce = None;
-    block0.verified_transactions.push(transaction1);
-    block0.sign_block();
-
-    println!("utsav public key: {:?}", utsav.public_key.as_bytes());
-    println!(
-        "bhupendra public key: {:?}",
-        bhupendra.public_key.as_bytes()
-    );
-    println!("jash public key: {:?}", jash.public_key.as_bytes());
+    println!("utsav public key: {}", utsav.identify());
+    println!("bhupendra public key: {}", bhupendra.identify());
+    println!("jash public key: {}", jash.identify());
     println!("");
 
-    let mut transaction2 = Transaction::new(utsav.public_key, bhupendra.public_key, 10.0, None);
-    transaction2.sign_transaction(Keypair {
-        secret: utsav.secret,
-        public: utsav.public_key,
-    });
+    let mut transaction1 = Transaction::new(utsav.public_key, bhupendra.public_key, 10.0, None);
+    transaction1.sign_transaction(&utsav);
+    println!(
+        "Transaction 1 signature validation: {:#?}",
+        transaction1.is_valid_transaction()
+    );
+    block0.verified_transactions.push(transaction1);
+
+    let mut transaction2 = Transaction::new(bhupendra.public_key, jash.public_key, 10.0, None);
+    transaction2.sign_transaction(&bhupendra);
+    println!(
+        "Transaction 2 signature validation: {:#?}",
+        transaction2.is_valid_transaction()
+    );
     block0.verified_transactions.push(transaction2);
 
-    let mut transaction3 = Transaction::new(bhupendra.public_key, jash.public_key, 10.0, None);
-    transaction3.sign_transaction(Keypair {
-        secret: bhupendra.secret,
-        public: bhupendra.public_key,
-    });
+    let mut transaction3 = Transaction::new(jash.public_key, utsav.public_key, 10.0, None);
+    transaction3.sign_transaction(&jash);
+    println!(
+        "Transaction 3 signature validation: {:#?}",
+        transaction3.is_valid_transaction()
+    );
     block0.verified_transactions.push(transaction3);
 
-    let mut transaction4 = Transaction::new(jash.public_key, utsav.public_key, 10.0, None);
-    transaction4.sign_transaction(Keypair {
-        secret: jash.secret,
-        public: jash.public_key,
-    });
-    block0.verified_transactions.push(transaction4);
-
-    let _last_block_hash = block0.signature.clone().unwrap();
+    let _last_block_hash = block0.calculate_hash();
     let mut coin_chain = Blockchain::new();
     coin_chain.add_block(block0);
     coin_chain.dump_blockchain();

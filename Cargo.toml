@@ -7,8 +7,10 @@ authors = ["Utsav Balar"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rand = "0.7.0"
 crypto-hash = "0.3.4"
-ed25519-dalek = "1.0.1"
-base64 = "0.13.0"
 chrono = "0.4.0"
+serde = { version = "1.0.142", features = ["derive"] }
+
+[dependencies.secp256k1] 
+version = "0.24.0"
+features = ["rand-std", "serde"]
