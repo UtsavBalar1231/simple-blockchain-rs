@@ -1,6 +1,3 @@
-use std::str::FromStr;
-
-use secp256k1::{PublicKey, Secp256k1, SecretKey};
 use simple_blockchain_rs::block::Block;
 use simple_blockchain_rs::blockchain::Blockchain;
 use simple_blockchain_rs::client::Client;
@@ -25,15 +22,7 @@ fn main() {
     let bhupendra = Client::new();
     let jash = Client::new();
 
-    let genesis_hash =
-        "0000000000000000000000000000000000000000000000000000000000000001".to_string();
-    let genesis_secp = Secp256k1::new();
-    let genesis_secretkey = SecretKey::from_str(genesis_hash.as_str()).unwrap();
-    let genesis_publickey = PublicKey::from_secret_key(&genesis_secp, &genesis_secretkey);
-    let transaction0 = Transaction::new(genesis_publickey, utsav.public_key, 1000.0, None);
-
-    let mut block0 = Block::new(0, genesis_hash);
-    block0.verified_transactions.push(transaction0);
+    let mut block0 = Block::genesis_block(&utsav);
 
     println!("utsav public key: {}", utsav.identify());
     println!("bhupendra public key: {}", bhupendra.identify());

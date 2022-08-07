@@ -1,8 +1,6 @@
-use crate::client::Client;
+use crate::client::*;
 use chrono::{DateTime, Utc};
-use secp256k1::{Message, PublicKey, Secp256k1};
-use secp256k1::ecdsa::Signature;
-use std::str::FromStr;
+use secp256k1::Message;
 
 /// A transaction structure that can be used to record a transaction in the blockchain.
 ///
@@ -13,8 +11,8 @@ use std::str::FromStr;
 /// `timestamp` contains the time at which the transaction was created.
 #[derive(Debug)]
 pub struct Transaction {
-    pub sender: PublicKey,
-    pub receiver: PublicKey,
+    pub sender: key::PublicKey,
+    pub receiver: key::PublicKey,
     time: DateTime<Utc>,
     pub amount: f64,
     signature: Option<String>,
@@ -23,8 +21,8 @@ pub struct Transaction {
 impl Transaction {
     /// This method creates a new transaction.
     pub fn new(
-        sender: PublicKey,
-        receiver: PublicKey,
+        sender: key::PublicKey,
+        receiver: key::PublicKey,
         amount: f64,
         signature: Option<String>,
     ) -> Self {
@@ -82,15 +80,20 @@ impl Transaction {
     /// This method verifies the signature of the transaction.
     pub fn is_valid_transaction(&self) -> bool {
         let secp = Secp256k1::verification_only();
-        let unsigned_tx_hash =
-            Message::from_slice(self.calculate_hash().as_slice()).expect("message from slice");
+        let unsigned_transaction_hash =
+            Message::from_slice(self.calculate_hash().as_slice()).unwrap();
         if let Some(_) = &self.signature {
-            let sig =
-                Signature::from_str(self.signature.as_ref().unwrap_or(&String::new()).as_str())
-                    .expect("signature from string");
-            return secp.verify_ecdsa(&unsigned_tx_hash, &sig, &self.sender).is_ok();
-        } else {
-            return false;
+            return secp
+                .verify_ecdsa(
+                    &unsigned_transaction_hash,
+                    &Signature::from_str(
+                        self.signature.as_ref().unwrap_or(&String::new()).as_str(),
+                    )
+                    .unwrap(),
+                    &self.sender,
+                )
+                .is_ok();
         }
+        return false;
     }
 }

@@ -1,8 +1,6 @@
-use secp256k1::ecdsa::Signature;
-use secp256k1::rand;
-use secp256k1::All;
-use secp256k1::Secp256k1;
-use std::str::FromStr;
+pub use secp256k1::ecdsa::Signature;
+pub use secp256k1::{rand, All, Secp256k1};
+pub use std::str::FromStr;
 
 pub mod key {
     pub use secp256k1::PublicKey;

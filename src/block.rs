@@ -1,7 +1,8 @@
-use super::transaction::Transaction;
+use super::transaction::*;
+use crate::client::*;
 
 /// A block in the blockchain.
-/// 
+///
 /// `index` contains the index of the block.
 /// `previous_hash` contains the hash of the previous block.
 /// `transactions` contains the transactions in the block.
@@ -26,6 +27,25 @@ impl Block {
             hash: String::new(),
             verified_transactions: vec![],
         }
+    }
+
+    pub fn genesis_block(receiver: &Client) -> Self {
+        let genesis_hash =
+            "0000000000000000000000000000000000000000000000000000000000000001".to_string();
+        let genesis_secp = Secp256k1::new();
+        let genesis_secretkey = key::SecretKey::from_str(genesis_hash.as_str()).unwrap();
+        let genesis_publickey = key::PublicKey::from_secret_key(&genesis_secp, &genesis_secretkey);
+
+        let initial_transaction =
+            Transaction::new(genesis_publickey, receiver.public_key, 1000.0, None);
+
+        let mut genesis_block = Block::new(0, genesis_publickey.to_string());
+
+        genesis_block
+            .verified_transactions
+            .push(initial_transaction);
+
+        genesis_block
     }
 
     /// This method verifies the transactions in the block.
