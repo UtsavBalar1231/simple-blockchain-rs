@@ -4,47 +4,45 @@ use crate::client::*;
 /// A block in the blockchain.
 ///
 /// `index` contains the index of the block.
+/// `nonce` contains the nonce of the block that is used to find a valid hash.
 /// `previous_hash` contains the hash of the previous block.
-/// `transactions` contains the transactions in the block.
 /// `hash` contains the hash of the block.
-/// `nonce` contains the nonce of the block.
+/// `verified_transactions` contains the transactions that are verified in the block.
 #[derive(Debug)]
 pub struct Block {
     pub index: u64,
     pub nonce: u64,
-    pub pre_hash: String,
+    pub previous_hash: Option<String>,
     pub hash: String,
     pub verified_transactions: Vec<Transaction>,
 }
 
 impl Block {
     /// This method creates a new block.
-    pub fn new(index: u64, pre_hash: String) -> Self {
+    pub fn new(index: u64, previous_hash: Option<String>) -> Self {
         Self {
             index,
             nonce: 0u64,
-            pre_hash,
+            previous_hash,
             hash: String::new(),
             verified_transactions: vec![],
         }
     }
 
+    /// This method generates genesis block.
     pub fn genesis_block(receiver: &Client) -> Self {
-        let genesis_hash =
-            "0000000000000000000000000000000000000000000000000000000000000001".to_string();
-        let genesis_secp = Secp256k1::new();
-        let genesis_secretkey = key::SecretKey::from_str(genesis_hash.as_str()).unwrap();
-        let genesis_publickey = key::PublicKey::from_secret_key(&genesis_secp, &genesis_secretkey);
+        let genesis = Client::new();
 
         let initial_transaction =
-            Transaction::new(genesis_publickey, receiver.public_key, 1000.0, None);
+            Transaction::new(genesis.public_key, receiver.public_key, 1000.0, None);
 
-        let mut genesis_block = Block::new(0, genesis_publickey.to_string());
+        let mut genesis_block = Block::new(0, None);
 
         genesis_block
             .verified_transactions
             .push(initial_transaction);
 
+        genesis_block.hash = genesis_block.calculate_hash();
         genesis_block
     }
 
@@ -67,7 +65,10 @@ impl Block {
             .fold(String::new(), |acc, x| acc + &x.serialize());
         format!(
             "{}{}{}{}",
-            self.index, self.nonce, self.pre_hash, transactions
+            self.index,
+            self.nonce,
+            self.previous_hash.as_ref().unwrap_or(&String::new()),
+            transactions
         )
     }
 
