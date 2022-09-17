@@ -1,6 +1,7 @@
 use crate::client::*;
 use chrono::{DateTime, Utc};
 use secp256k1::Message;
+use std::str::FromStr;
 
 /// A transaction structure that can be used to record a transaction in the blockchain.
 ///
@@ -11,8 +12,8 @@ use secp256k1::Message;
 /// `timestamp` contains the time at which the transaction was created.
 #[derive(Debug)]
 pub struct Transaction {
-    pub sender: key::PublicKey,
-    pub receiver: key::PublicKey,
+    pub sender: PublicKey,
+    pub receiver: PublicKey,
     time: DateTime<Utc>,
     pub amount: f64,
     signature: Option<String>,
@@ -21,8 +22,8 @@ pub struct Transaction {
 impl Transaction {
     /// This method creates a new transaction.
     pub fn new(
-        sender: key::PublicKey,
-        receiver: key::PublicKey,
+        sender: PublicKey,
+        receiver: PublicKey,
         amount: f64,
         signature: Option<String>,
     ) -> Self {
@@ -82,14 +83,18 @@ impl Transaction {
 
     /// This method verifies the signature of the transaction.
     pub fn is_valid_transaction(&self) -> bool {
+        if self.signature.is_none() {
+            return false;
+        }
+
         let secp = Secp256k1::verification_only();
 
-        let unsigned_transaction_hash =
+        let unverified_transaction_hash =
             Message::from_slice(self.calculate_hash().as_slice()).unwrap();
 
         secp.verify_ecdsa(
-            &unsigned_transaction_hash,
-            &Signature::from_str(self.signature.as_ref().unwrap_or(&String::new())).unwrap(),
+            &unverified_transaction_hash,
+            &Signature::from_str(self.signature.as_ref().expect("No signature found.")).unwrap(),
             &self.sender,
         )
         .is_ok()
