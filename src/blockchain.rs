@@ -25,7 +25,8 @@ impl Blockchain {
     fn process_block_transactions(&mut self, block: &Block) {
         for (i, transaction) in block.verified_transactions.iter().enumerate() {
             // Process: Sender -> Receiver (Deduct amount from balance)
-            if i > 0 { // Skip for coinbase transaction
+            if i > 0 {
+                // Skip for coinbase transaction
                 let sender_balance = self
                     .balances
                     .get_mut(&transaction.sender.unwrap())
@@ -38,10 +39,24 @@ impl Blockchain {
         }
     }
 
+    fn validate_last_block(&self, block: &Block) -> Result<(), &'static str> {
+        let previous_block = self.blocks.last();
+        let previous_block_hash =
+            previous_block.map_or(String::from("0").repeat(64), |b| b.block_hash.clone());
+        // println!("Previous block hash: {}", block.previous_block_hash);
+        // println!("Current block hash: {}", previous_block_hash);
+        if block.previous_block_hash != previous_block_hash.clone() {
+            return Err("Block verification: Must reference previous block's hash");
+        }
+
+        println!("Block verification: PoW is valid");
+        Ok(())
+    }
 
     /// This method process a block in blockchain
     fn process_block(&mut self, block: &Block) -> Result<(), &'static str> {
         block.verify_block()?;
+        self.validate_last_block(&block)?;
         self.process_block_transactions(&block);
         self.blocks.push(block.clone());
         return Ok(());
