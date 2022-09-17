@@ -9,7 +9,7 @@ pub use secp256k1::{PublicKey, SecretKey};
 /// `secp` contains the secp256k1 context.
 pub struct Client {
     pub secp: Secp256k1<All>,
-    pub secret_key: SecretKey,
+    secret_key: SecretKey,
     pub public_key: PublicKey,
 }
 

@@ -10,9 +10,9 @@ use std::str::FromStr;
 /// `amount` contains the amount of money that is being sent.
 /// `signature` contains the signature of the transaction.
 /// `timestamp` contains the time at which the transaction was created.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Transaction {
-    pub sender: PublicKey,
+    pub sender: Option<PublicKey>,
     pub receiver: PublicKey,
     time: DateTime<Utc>,
     pub amount: f64,
@@ -22,15 +22,11 @@ pub struct Transaction {
 impl Transaction {
     /// This method creates a new transaction.
     pub fn new(
-        sender: PublicKey,
+        sender: Option<PublicKey>,
         receiver: PublicKey,
         amount: f64,
         signature: Option<String>,
     ) -> Self {
-        if sender == receiver {
-            panic!("Sender and receiver cannot be the same.");
-        }
-
         Self {
             sender,
             receiver,
@@ -40,12 +36,22 @@ impl Transaction {
         }
     }
 
+    /// This method creates a new transaction.
+    pub fn signed_new(sender: &Client, receiver: PublicKey, amount: f64) -> Self {
+        let mut transaction = Transaction::new(Some(sender.public_key), receiver, amount, None);
+        transaction.sign_transaction(&sender);
+
+        transaction
+    }
+
     /// This method serializes the transaction into a string.
     pub fn serialize_transaction(&self) -> String {
-        format!(
-            "{}{}{}{}",
-            self.sender, self.receiver, self.amount, self.time,
-        )
+        let sender = match &self.sender {
+            Some(sender) => sender.to_string(),
+            None => String::new(),
+        };
+
+        format!("{}{}{}{}", sender, self.receiver, self.amount, self.time,)
     }
 
     /// This method calculates the hash of the transaction using SHA256.
@@ -63,7 +69,9 @@ impl Transaction {
 
     /// This method prints the signature of the transaction.
     pub fn print_transaction(&self) {
-        println!("sender: {}", self.sender.to_string());
+        if let Some(sender) = &self.sender {
+            println!("sender: {}", sender.to_string());
+        }
         println!("receiver: {}", self.receiver.to_string());
         println!("time: {:?}", self.time);
         println!("amount: {:?}", self.amount);
@@ -82,21 +90,25 @@ impl Transaction {
     }
 
     /// This method verifies the signature of the transaction.
-    pub fn is_valid_transaction(&self) -> bool {
+    pub fn is_valid_transaction(&self) -> Result<(), &'static str> {
         if self.signature.is_none() {
-            return false;
+            return Err("No signature found.");
         }
 
         let secp = Secp256k1::verification_only();
 
-        let unverified_transaction_hash =
+        let unsigned_transaction_hash =
             Message::from_slice(self.calculate_hash().as_slice()).unwrap();
 
-        secp.verify_ecdsa(
-            &unverified_transaction_hash,
-            &Signature::from_str(self.signature.as_ref().expect("No signature found.")).unwrap(),
-            &self.sender,
-        )
-        .is_ok()
+        let sig =
+            Signature::from_str(self.signature.as_ref().expect("No signature found.")).unwrap();
+
+        match secp.verify_ecdsa(&unsigned_transaction_hash, &sig, &self.sender.unwrap()) {
+            Ok(_) => Ok(()),
+            Err(_) => {
+                println!("Transaction is invalid: {:?}", self);
+                Err("Invalid signature.")
+            }
+        }
     }
 }

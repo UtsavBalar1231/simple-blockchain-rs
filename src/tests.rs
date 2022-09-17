@@ -15,7 +15,7 @@ pub fn transaction_class_print_transaction() {
     let receiver = Client::new();
     let amount = 1.0;
 
-    let mut transaction1 = Transaction::new(client.public_key, receiver.public_key, amount, None);
+    let mut transaction1 = Transaction::new(Some(client.public_key), receiver.public_key, amount, None);
     transaction1.sign_transaction(&client);
 
     transaction1.print_transaction();
@@ -38,7 +38,8 @@ pub fn transaction_class_print_multiple_transactions() {
     println!("jash public key: {}", jash.identify());
     println!("");
 
-    let mut transaction1 = Transaction::new(utsav.public_key, bhupendra.public_key, 10.0, None);
+    let mut transaction1 =
+        Transaction::new(Some(utsav.public_key), bhupendra.public_key, 10.0, None);
     transaction1.sign_transaction(&utsav);
     println!(
         "Transaction 1 signature validation: {:#?}",
@@ -46,7 +47,8 @@ pub fn transaction_class_print_multiple_transactions() {
     );
     transactions.push(transaction1);
 
-    let mut transaction2 = Transaction::new(bhupendra.public_key, jash.public_key, 10.0, None);
+    let mut transaction2 =
+        Transaction::new(Some(bhupendra.public_key), jash.public_key, 10.0, None);
     transaction2.sign_transaction(&bhupendra);
     println!(
         "Transaction 2 signature validation: {:#?}",
@@ -54,7 +56,7 @@ pub fn transaction_class_print_multiple_transactions() {
     );
     transactions.push(transaction2);
 
-    let mut transaction3 = Transaction::new(jash.public_key, utsav.public_key, 10.0, None);
+    let mut transaction3 = Transaction::new(Some(jash.public_key), utsav.public_key, 10.0, None);
     transaction3.sign_transaction(&jash);
     println!(
         "Transaction 3 signature validation: {:#?}",
@@ -82,7 +84,8 @@ pub fn block_class_print_block() {
     println!("jash public key: {}", jash.identify());
     println!("");
 
-    let mut transaction1 = Transaction::new(utsav.public_key, bhupendra.public_key, 10.0, None);
+    let mut transaction1 =
+        Transaction::new(Some(utsav.public_key), bhupendra.public_key, 10.0, None);
     transaction1.sign_transaction(&utsav);
     println!(
         "Transaction 1 signature validation: {:#?}",
@@ -90,7 +93,8 @@ pub fn block_class_print_block() {
     );
     block0.verified_transactions.push(transaction1);
 
-    let mut transaction2 = Transaction::new(bhupendra.public_key, jash.public_key, 10.0, None);
+    let mut transaction2 =
+        Transaction::new(Some(bhupendra.public_key), jash.public_key, 10.0, None);
     transaction2.sign_transaction(&bhupendra);
     println!(
         "Transaction 2 signature validation: {:#?}",
@@ -98,7 +102,7 @@ pub fn block_class_print_block() {
     );
     block0.verified_transactions.push(transaction2);
 
-    let mut transaction3 = Transaction::new(jash.public_key, utsav.public_key, 10.0, None);
+    let mut transaction3 = Transaction::new(Some(jash.public_key), utsav.public_key, 10.0, None);
     transaction3.sign_transaction(&jash);
     println!(
         "Transaction 3 signature validation: {:#?}",
@@ -122,7 +126,8 @@ pub fn blockchain_class_print_blockchain() {
     println!("jash public key: {}", jash.identify());
     println!("");
 
-    let mut transaction1 = Transaction::new(utsav.public_key, bhupendra.public_key, 10.0, None);
+    let mut transaction1 =
+        Transaction::new(Some(utsav.public_key), bhupendra.public_key, 10.0, None);
     transaction1.sign_transaction(&utsav);
     println!(
         "Transaction 1 signature validation: {:#?}",
@@ -130,7 +135,8 @@ pub fn blockchain_class_print_blockchain() {
     );
     block0.verified_transactions.push(transaction1);
 
-    let mut transaction2 = Transaction::new(bhupendra.public_key, jash.public_key, 10.0, None);
+    let mut transaction2 =
+        Transaction::new(Some(bhupendra.public_key), jash.public_key, 10.0, None);
     transaction2.sign_transaction(&bhupendra);
     println!(
         "Transaction 2 signature validation: {:#?}",
@@ -138,7 +144,7 @@ pub fn blockchain_class_print_blockchain() {
     );
     block0.verified_transactions.push(transaction2);
 
-    let mut transaction3 = Transaction::new(jash.public_key, utsav.public_key, 10.0, None);
+    let mut transaction3 = Transaction::new(Some(jash.public_key), utsav.public_key, 10.0, None);
     transaction3.sign_transaction(&jash);
     println!(
         "Transaction 3 signature validation: {:#?}",
@@ -148,7 +154,7 @@ pub fn blockchain_class_print_blockchain() {
 
     let _last_block_hash = block0.calculate_hash();
     let mut coin_chain = Blockchain::new();
-    coin_chain.add_block(block0);
+    coin_chain.blocks.push(block0);
     coin_chain.dump_blockchain();
 }
 
@@ -156,7 +162,7 @@ pub fn blockchain_class_print_blockchain() {
 pub fn block_mine() {
     let utsav = Client::new();
     let mut block0 = Block::genesis_block(&utsav);
-    block0.mine_block(3);
+    block0 = block0.mine_block(3).unwrap();
     println!("{:#?}", block0);
 }
 
@@ -167,7 +173,7 @@ pub fn push_block_into_blockchain() {
     let jash = Client::new();
 
     let mut block0 = Block::genesis_block(&utsav);
-    block0.mine_block(2);
+    block0 = block0.mine_block(2).unwrap();
 
     let mut block1 = Block::new(1, &block0.block_hash);
     println!("utsav public key: {}", utsav.identify());
@@ -175,23 +181,54 @@ pub fn push_block_into_blockchain() {
     println!("jash public key: {}", jash.identify());
     println!("");
 
-    let mut transaction1 = Transaction::new(utsav.public_key, bhupendra.public_key, 10.0, None);
+    let mut transaction1 =
+        Transaction::new(Some(utsav.public_key), bhupendra.public_key, 10.0, None);
     transaction1.sign_transaction(&utsav);
 
-    let mut transaction2 = Transaction::new(bhupendra.public_key, jash.public_key, 10.0, None);
+    let mut transaction2 =
+        Transaction::new(Some(bhupendra.public_key), jash.public_key, 10.0, None);
     transaction2.sign_transaction(&bhupendra);
 
-    let mut transaction3 = Transaction::new(jash.public_key, utsav.public_key, 10.0, None);
+    let mut transaction3 = Transaction::new(Some(jash.public_key), utsav.public_key, 10.0, None);
     transaction3.sign_transaction(&jash);
 
     block1.verified_transactions.push(transaction1);
     block1.verified_transactions.push(transaction2);
     block1.verified_transactions.push(transaction3);
 
-    block1.mine_block(2);
+    block1 = block1.mine_block(2).unwrap();
 
     let mut balar_chain = Blockchain::new();
-    balar_chain.add_block(block0);
-    balar_chain.add_block(block1);
+    balar_chain.blocks.push(block0);
+    balar_chain.blocks.push(block1);
     balar_chain.dump_blockchain();
+}
+
+#[allow(dead_code)]
+pub fn test_new_blockchain() {
+    let utsav = Client::new();
+    let bhupendra = Client::new();
+    let jash = Client::new();
+
+    println!("utsav public key: {}", utsav.identify());
+    println!("bhupendra public key: {}", bhupendra.identify());
+    println!("jash public key: {}", jash.identify());
+
+    let mut transaction0 =
+        Transaction::new(Some(utsav.public_key), bhupendra.public_key, 10.0, None);
+    transaction0.sign_transaction(&utsav);
+    let mut transaction1 =
+        Transaction::new(Some(bhupendra.public_key), jash.public_key, 10.0, None);
+    transaction1.sign_transaction(&bhupendra);
+    let mut transaction2 = Transaction::new(Some(jash.public_key), utsav.public_key, 10.0, None);
+    transaction2.sign_transaction(&jash);
+
+    let mut blockchain = Blockchain::new();
+    blockchain.start_blockchain().unwrap();
+
+    blockchain.mempool.push(transaction0);
+    blockchain.mempool.push(transaction1);
+    blockchain.mempool.push(transaction2);
+
+    blockchain.dump_blockchain();
 }
