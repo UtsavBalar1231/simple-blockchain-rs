@@ -230,5 +230,7 @@ pub fn test_new_blockchain() {
     blockchain.mempool.push(transaction1);
     blockchain.mempool.push(transaction2);
 
+    blockchain.mine().unwrap();
+
     blockchain.dump_blockchain();
 }

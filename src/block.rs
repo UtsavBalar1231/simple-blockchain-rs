@@ -2,7 +2,7 @@ use super::transaction::*;
 use crate::client::*;
 
 const DIFFICULTY_STRING: &str = "0";
-const MINING_REWARD: f64 = 50.0;
+pub const MINING_REWARD: f64 = 50.0;
 
 /// A block in the blockchain.
 ///
@@ -114,7 +114,6 @@ impl Block {
             if hash.starts_with(&DIFFICULTY_STRING.repeat(difficulty_level)) {
                 block.nonce = nonce;
                 block.block_hash = hash;
-                println!("Block Mined!: {:#?}", self);
                 break;
             }
 
