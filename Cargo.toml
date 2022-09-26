@@ -1,6 +1,6 @@
 [package]
 name = "simple-blockchain-rs"
-version = "0.1.0"
+version = "0.1.2"
 edition = "2021"
 authors = ["Utsav Balar"]
 
@@ -8,8 +8,9 @@ authors = ["Utsav Balar"]
 
 [dependencies]
 crypto-hash = "0.3.4"
-chrono = "0.4.0"
-serde = { version = "1.0.142", features = ["derive"] }
+chrono = "0.4.22"
+serde = { version = "1.0.145", features = ["derive"] }
+clap = "3.2.22"
 
 [dependencies.secp256k1] 
 version = "0.24.0"
