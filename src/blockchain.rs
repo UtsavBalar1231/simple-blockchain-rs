@@ -22,19 +22,67 @@ impl Blockchain {
         }
     }
 
+    pub fn coinbase_transaction(&self) -> Transaction {
+        Transaction::signed_new(
+            &self.client,
+            self.client.public_key,
+            Block::get_block_reward(self.blocks.len()),
+        )
+    }
+
+    /// This method generates genesis block.
+    pub fn genesis_block(&self) -> Block {
+        let mut genesis_block = Block::new(0, GENESIS_BLOCK_HASH);
+
+        genesis_block
+            .verified_transactions
+            .push(self.coinbase_transaction());
+
+        genesis_block.block_hash = GENESIS_BLOCK_HASH;
+        genesis_block
+    }
+
+    fn verify_transaction(&self, transaction: &Transaction) -> Result<(), &'static str> {
+        transaction.is_valid_transaction()?;
+        if transaction.amount <= 0.0 {
+            return Err("Transaction verification failed: Amount is not valid");
+        }
+
+        if !self.balances.contains_key(&transaction.sender.unwrap()) {
+            return Err("Transaction verification failed: Sender does not exist");
+        }
+
+        if self.balances[&transaction.sender.unwrap()] < transaction.amount {
+            return Err("Transaction verification failed: Sender does not have enough balance");
+        }
+
+        Ok(())
+    }
+
+    pub fn send_transaction(
+        &mut self,
+        public_key: PublicKey,
+        amount: f64,
+    ) -> Result<Transaction, &'static str> {
+        let tx = Transaction::signed_new(&self.client, public_key, amount);
+        self.verify_transaction(&tx)?;
+        self.mempool.push(tx.clone());
+        return Ok(tx);
+    }
+
     fn process_block_transactions(&mut self, block: &Block) {
         for (i, transaction) in block.verified_transactions.iter().enumerate() {
             let mut empty: f64 = 0.0;
-            // Process: Sender -> Receiver (Deduct amount from balance)
+            // i = 0 => Skip when coinbase transaction
+            // Process: Sender => Receiver (Deduct amount from balance)
             if i > 0 {
-                // Skip for coinbase transaction
                 let sender_balance = self
                     .balances
                     .get_mut(&transaction.sender.unwrap())
                     .unwrap_or(&mut empty);
                 *sender_balance -= transaction.amount;
             }
-            // Process: Receiver <- Sender (Insert amount into balance)
+            // Process: Receiver <= Sender (Insert amount into balance)
             let receiver_balance = self.balances.entry(transaction.receiver).or_insert(0.0);
             *receiver_balance += transaction.amount;
         }
@@ -63,20 +111,13 @@ impl Blockchain {
 
     /// This method is used to start a new blockchain with genesis block included
     pub fn start_blockchain(&mut self) -> Result<Block, &'static str> {
-        let genesis_block = Block::genesis_block(&self.client)
+        let genesis_block = self
+            .genesis_block()
             .mine_block(DIFFICULTY_LEVEL)
             .expect("Failed to mine genesis block");
         self.process_block(&genesis_block)?;
 
         Ok(genesis_block)
-    }
-
-    pub fn coinbase_transaction(&self) -> Transaction {
-        Transaction::signed_new(
-            &self.client,
-            self.client.public_key,
-            Block::get_block_reward(0),
-        )
     }
 
     pub fn mine(&mut self) -> Result<Block, &'static str> {

@@ -1,6 +1,6 @@
 use clap::{App, Arg, SubCommand};
 use secp256k1::PublicKey;
-use simple_blockchain_rs::{blockchain::Blockchain, client::Client, transaction::Transaction};
+use simple_blockchain_rs::{blockchain::Blockchain, client::Client};
 use std::io::{self, Write};
 use std::str::FromStr;
 
@@ -65,11 +65,11 @@ fn main() -> std::io::Result<()> {
 
         let command = args.next().unwrap();
         match command {
-            "pubkey" => {
+            "newpubkey" => {
                 let client = Client::new();
-                println!("client public key: {}", client.identify());
+                println!("new public key: {}", client.identify());
             }
-            "balance" => {
+            "balances" => {
                 println!("{{");
                 for (&pubkey, &amount) in &blockchain.balances {
                     println!("{}: {}", pubkey, amount);
@@ -84,18 +84,17 @@ fn main() -> std::io::Result<()> {
                 println!("Mempool: {:#?}", blockchain.mempool);
             }
             "send" => {
-                let receiver = args.next().unwrap();
-                let amount = args.next().unwrap();
-                let amount = f64::from_str(amount).unwrap();
-                let client = Client::new();
-                let mut transaction = Transaction::new(
-                    Some(client.public_key),
-                    PublicKey::from_str(receiver).unwrap(),
-                    amount,
-                    None,
-                );
-                transaction.sign_transaction(&client);
-                transaction.print_transaction();
+                let receiver =
+                    PublicKey::from_str(args.next().unwrap()).expect("Invalid public key");
+                let amount = f64::from_str(args.next().unwrap()).expect("Invalid amount");
+                match blockchain.send_transaction(receiver, amount) {
+                    Ok(transaction) => {
+                        transaction.print_transaction();
+                    }
+                    Err(e) => {
+                        println!("Transaction failed: {}", e);
+                    }
+                }
             }
             "exit" => break,
             _ => println!("Invalid command"),

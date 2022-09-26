@@ -1,5 +1,4 @@
 use super::transaction::*;
-use crate::client::*;
 
 const DIFFICULTY_STRING: &str = "0";
 pub const GENESIS_BLOCK_HASH: &str =
@@ -36,20 +35,6 @@ impl Block {
     pub fn get_block_reward(index: usize) -> f64 {
         let block_factor = 100; /* bitcoin has block factor of 210000 */
         50.0 / (2.0_f64.powi(index as i32 / block_factor) as f64)
-    }
-
-    /// This method generates genesis block.
-    pub fn genesis_block(miner: &Client) -> Self {
-        let mut genesis_block = Block::new(0, GENESIS_BLOCK_HASH);
-
-        let coinbase_transaction =
-            Transaction::signed_new(miner, miner.public_key, Self::get_block_reward(0));
-        genesis_block
-            .verified_transactions
-            .push(coinbase_transaction);
-
-        genesis_block.block_hash = GENESIS_BLOCK_HASH;
-        genesis_block
     }
 
     pub fn verify_block(&self) -> Result<(), &'static str> {
