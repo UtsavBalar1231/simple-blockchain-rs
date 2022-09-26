@@ -1,7 +1,7 @@
 use crate::client::*;
 use chrono::{DateTime, Utc};
 use secp256k1::Message;
-use std::str::FromStr;
+use std::{str::FromStr, fmt::Debug};
 
 /// A transaction structure that can be used to record a transaction in the blockchain.
 ///
@@ -10,13 +10,25 @@ use std::str::FromStr;
 /// `amount` contains the amount of money that is being sent.
 /// `signature` contains the signature of the transaction.
 /// `timestamp` contains the time at which the transaction was created.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Transaction {
     pub sender: Option<PublicKey>,
     pub receiver: PublicKey,
     time: DateTime<Utc>,
     pub amount: f64,
     signature: Option<String>,
+}
+
+impl Debug for Transaction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Transaction")
+            .field("sender", &format!("{}", self.sender.unwrap()))
+            .field("receiver", &format!("{}", self.receiver))
+            .field("time", &self.time)
+            .field("amount", &self.amount)
+            .field("signature", &self.signature.as_ref().unwrap())
+            .finish()
+    }
 }
 
 impl Transaction {
