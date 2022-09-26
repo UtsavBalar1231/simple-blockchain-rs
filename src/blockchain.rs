@@ -75,7 +75,7 @@ impl Blockchain {
         Transaction::signed_new(
             &self.client,
             self.client.public_key,
-            super::block::MINING_REWARD,
+            Block::get_block_reward(0),
         )
     }
 

@@ -2,7 +2,6 @@ use super::transaction::*;
 use crate::client::*;
 
 const DIFFICULTY_STRING: &str = "0";
-pub const MINING_REWARD: f64 = 50.0;
 
 /// A block in the blockchain.
 ///
@@ -32,12 +31,18 @@ impl Block {
         }
     }
 
+    pub fn get_block_reward(index: usize) -> f64 {
+        let block_factor = 100; /* bitcoin has block factor of 210000 */
+        50.0 / (2.0_f64.powi(index as i32 / block_factor) as f64)
+    }
+
     /// This method generates genesis block.
     pub fn genesis_block(miner: &Client) -> Self {
         let null_hash = String::from("0").repeat(64);
         let mut genesis_block = Block::new(0, &null_hash);
 
-        let coinbase_transaction = Transaction::signed_new(miner, miner.public_key, MINING_REWARD);
+        let coinbase_transaction =
+            Transaction::signed_new(miner, miner.public_key, Self::get_block_reward(0));
         genesis_block
             .verified_transactions
             .push(coinbase_transaction);
@@ -63,7 +68,7 @@ impl Block {
         if self.verified_transactions.len() == 0 {
             return Err("Block verification failed: No coinbase transaction");
         }
-        if self.verified_transactions.iter().next().unwrap().amount != MINING_REWARD {
+        if self.verified_transactions.iter().next().unwrap().amount != Self::get_block_reward(0) {
             return Err("Block verification failed: Coinbase transaction amount is not valid");
         }
 
@@ -73,13 +78,12 @@ impl Block {
     /// This method verifies the transactions inside the block.
     pub fn has_valid_transactions(&self) -> Result<(), &'static str> {
         if self.index == 0 {
-            self.verify_coinbase_transaction()?;
-        } else {
-            for transaction in self.verified_transactions.iter() {
-                transaction.is_valid_transaction()?;
-            }
+            return self.verify_coinbase_transaction();
         }
 
+        for transaction in self.verified_transactions.iter() {
+            transaction.is_valid_transaction()?;
+        }
         Ok(())
     }
 
