@@ -43,7 +43,7 @@ impl Blockchain {
     fn validate_last_block(&self, block: &Block) -> Result<(), &'static str> {
         let previous_block = self.blocks.last();
         let previous_block_hash =
-            previous_block.map_or(String::from("0").repeat(64), |b| b.block_hash.clone());
+            previous_block.map_or(super::block::GENESIS_BLOCK_HASH, |b| b.block_hash);
 
         if block.previous_block_hash != previous_block_hash.clone() {
             return Err("Block verification: Must reference previous block's hash");

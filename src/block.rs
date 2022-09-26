@@ -2,6 +2,8 @@ use super::transaction::*;
 use crate::client::*;
 
 const DIFFICULTY_STRING: &str = "0";
+pub const GENESIS_BLOCK_HASH: &str =
+    "0000000000000000000000000000000000000000000000000000000000000000";
 
 /// A block in the blockchain.
 ///
@@ -14,19 +16,19 @@ const DIFFICULTY_STRING: &str = "0";
 pub struct Block {
     pub index: usize,
     pub nonce: usize,
-    pub previous_block_hash: String,
-    pub block_hash: String,
+    pub previous_block_hash: &'static str,
+    pub block_hash: &'static str,
     pub verified_transactions: Vec<Transaction>,
 }
 
 impl Block {
     /// This method creates a new block.
-    pub fn new(index: usize, previous_block_hash: &String) -> Self {
+    pub fn new(index: usize, previous_block_hash: &'static str) -> Self {
         Self {
             index,
             nonce: 0,
-            previous_block_hash: previous_block_hash.into(),
-            block_hash: String::new(),
+            previous_block_hash,
+            block_hash: "",
             verified_transactions: vec![],
         }
     }
@@ -38,8 +40,7 @@ impl Block {
 
     /// This method generates genesis block.
     pub fn genesis_block(miner: &Client) -> Self {
-        let null_hash = String::from("0").repeat(64);
-        let mut genesis_block = Block::new(0, &null_hash);
+        let mut genesis_block = Block::new(0, GENESIS_BLOCK_HASH);
 
         let coinbase_transaction =
             Transaction::signed_new(miner, miner.public_key, Self::get_block_reward(0));
@@ -47,7 +48,7 @@ impl Block {
             .verified_transactions
             .push(coinbase_transaction);
 
-        genesis_block.block_hash = null_hash;
+        genesis_block.block_hash = GENESIS_BLOCK_HASH;
         genesis_block
     }
 
@@ -101,11 +102,13 @@ impl Block {
     }
 
     /// This method calculates the hash of the block using SHA256.
-    pub fn calculate_hash(&self) -> String {
-        crypto_hash::hex_digest(
+    pub fn calculate_hash(&self) -> &'static str {
+        let hash = crypto_hash::hex_digest(
             crypto_hash::Algorithm::SHA256,
             &self.serialize_block().as_bytes(),
-        )
+        );
+
+        Box::leak(hash.into_boxed_str())
     }
 
     pub fn mine_block(self, difficulty_level: usize) -> Result<Block, &'static str> {
@@ -117,7 +120,7 @@ impl Block {
 
             if hash.starts_with(&DIFFICULTY_STRING.repeat(difficulty_level)) {
                 block.nonce = nonce;
-                block.block_hash = hash;
+                block.block_hash = &hash;
                 break;
             }
 
