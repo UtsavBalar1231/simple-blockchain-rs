@@ -1,23 +1,8 @@
 use clap::{App, Arg, SubCommand};
 use secp256k1::PublicKey;
-#[allow(unused_imports)]
-use simple_blockchain_rs::{
-    block::Block, blockchain::Blockchain, client::Client, tests::*, transaction::Transaction,
-};
+use simple_blockchain_rs::{blockchain::Blockchain, client::Client, transaction::Transaction};
 use std::io::{self, Write};
 use std::str::FromStr;
-
-#[allow(dead_code)]
-fn tests() {
-    client_class_print_key();
-    transaction_class_print_transaction();
-    transaction_class_print_multiple_transactions();
-    block_class_print_block();
-    blockchain_class_print_blockchain();
-    block_mine();
-    push_block_into_blockchain();
-    test_new_blockchain();
-}
 
 fn main() -> std::io::Result<()> {
     let mut blockchain = Blockchain::new();
