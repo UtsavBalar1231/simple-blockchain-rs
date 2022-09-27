@@ -1,4 +1,5 @@
 use super::transaction::*;
+use serde::{Deserialize, Serialize};
 
 const DIFFICULTY_STRING: &str = "0";
 pub const GENESIS_BLOCK_HASH: &str =
@@ -11,7 +12,7 @@ pub const GENESIS_BLOCK_HASH: &str =
 /// `previous_block_hash` contains the hash of the previous block.
 /// `hash` contains the hash of the block.
 /// `verified_transactions` contains the transactions that are verified in the block.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Block {
     pub index: usize,
     pub nonce: usize,
