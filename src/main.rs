@@ -1,15 +1,16 @@
 use clap::{App, Arg, SubCommand};
 use secp256k1::PublicKey;
-use simple_blockchain_rs::{blockchain::Blockchain, client::Client};
+use simple_blockchain_rs::{blockchain::Blockchain, client::Client, storage};
 use std::io::{self, Write};
 use std::str::FromStr;
 
 fn main() -> std::io::Result<()> {
     let mut blockchain = Blockchain::new();
-    blockchain
+    let latest_block = blockchain
         .start_blockchain()
         .expect("Blockchain failed to start");
     println!("Blockchain started");
+    println!("Latest block: {:#?}", latest_block);
     println!("Your public key is: {}", blockchain.client.identify());
 
     let _ = App::new("Simple Blockchain")
@@ -71,7 +72,7 @@ fn main() -> std::io::Result<()> {
             }
             "balances" => {
                 println!("{{");
-                for (&pubkey, &amount) in &blockchain.balances {
+                for (&pubkey, &amount) in &storage::get_balances(&blockchain.balances).unwrap() {
                     println!("{}: {}", pubkey, amount);
                 }
                 println!("}}");
@@ -89,12 +90,15 @@ fn main() -> std::io::Result<()> {
                 let amount = f64::from_str(args.next().unwrap()).expect("Invalid amount");
                 match blockchain.send_transaction(receiver, amount) {
                     Ok(transaction) => {
-                        transaction.print_transaction();
+                        println!("Transaction created: {:#?}", transaction);
                     }
                     Err(e) => {
                         println!("Transaction failed: {}", e);
                     }
                 }
+            }
+            "clear" => {
+                print!("\x1B[2J\x1B[1;1H");
             }
             "exit" => break,
             _ => println!("Invalid command"),

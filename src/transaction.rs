@@ -80,28 +80,6 @@ impl Transaction {
         self.signature = signer.sign(&self.calculate_hash()).to_string().into();
     }
 
-    /// This method prints the signature of the transaction.
-    pub fn print_transaction(&self) {
-        if let Some(sender) = &self.sender {
-            println!("sender: {}", sender.to_string());
-        }
-        println!("receiver: {}", self.receiver.to_string());
-        println!("time: {:?}", self.time);
-        println!("amount: {:?}", self.amount);
-        if let Some(signature) = &self.signature {
-            println!("signature: {}", signature);
-        }
-        println!("");
-    }
-
-    /// This method prints the signature of the transaction.
-    pub fn print_signature(&self) {
-        println!(
-            "Signature: {}",
-            self.signature.as_ref().expect("No signature found.")
-        );
-    }
-
     /// This method verifies the signature of the transaction.
     pub fn is_valid_transaction(&self) -> Result<(), &'static str> {
         if self.signature.is_none() {

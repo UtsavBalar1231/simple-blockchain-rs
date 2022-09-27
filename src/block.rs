@@ -16,19 +16,19 @@ pub const GENESIS_BLOCK_HASH: &str =
 pub struct Block {
     pub index: usize,
     pub nonce: usize,
-    pub previous_block_hash: &'static str,
-    pub block_hash: &'static str,
+    pub previous_block_hash: String,
+    pub block_hash: String,
     pub verified_transactions: Vec<Transaction>,
 }
 
 impl Block {
     /// This method creates a new block.
-    pub fn new(index: usize, previous_block_hash: &'static str) -> Self {
+    pub fn new(index: usize, previous_block_hash: String) -> Self {
         Self {
             index,
             nonce: 0,
             previous_block_hash,
-            block_hash: "",
+            block_hash: String::new(),
             verified_transactions: vec![],
         }
     }
@@ -88,13 +88,11 @@ impl Block {
     }
 
     /// This method calculates the hash of the block using SHA256.
-    pub fn calculate_hash(&self) -> &'static str {
-        let hash = crypto_hash::hex_digest(
+    pub fn calculate_hash(&self) -> String {
+        crypto_hash::hex_digest(
             crypto_hash::Algorithm::SHA256,
             &self.serialize_block().as_bytes(),
-        );
-
-        Box::leak(hash.into_boxed_str())
+        )
     }
 
     pub fn mine_block(self, difficulty_level: usize) -> Result<Block, &'static str> {
@@ -106,7 +104,7 @@ impl Block {
 
             if hash.starts_with(&DIFFICULTY_STRING.repeat(difficulty_level)) {
                 block.nonce = nonce;
-                block.block_hash = &hash;
+                block.block_hash = hash;
                 break;
             }
 

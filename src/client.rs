@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 pub use secp256k1::ecdsa::Signature;
 pub use secp256k1::{rand, All, Secp256k1};
 pub use secp256k1::{PublicKey, SecretKey};
@@ -9,7 +11,7 @@ pub use secp256k1::{PublicKey, SecretKey};
 /// `secp` contains the secp256k1 context.
 pub struct Client {
     pub secp: Secp256k1<All>,
-    secret_key: SecretKey,
+    pub secret_key: SecretKey,
     pub public_key: PublicKey,
 }
 
@@ -24,6 +26,18 @@ impl Client {
             secret_key,
             public_key,
         }
+    }
+
+    pub fn from(key: String) -> Result<Self, secp256k1::Error> {
+        let secp = Secp256k1::new();
+        let secret_key = SecretKey::from_str(&key)?;
+        let public_key = PublicKey::from_secret_key(&secp, &secret_key);
+
+        Ok(Self {
+            secp,
+            secret_key,
+            public_key,
+        })
     }
 
     /// This method identifies the client to the blockchain.
